@@ -1,7 +1,10 @@
 from numpy import random, zeros
+import matplotlib.pyplot as plt
+
 def main():
     num_bits = 1000
     eavesdropping_probability = 0.4
+    
     alice_bits, alice_bases = prepare_and_send_bits(num_bits)
     eaves_bits, eaves_bases, intercepted = eavesdrop_and_measure(alice_bits, alice_bases, num_bits, eavesdropping_probability)
     bob_bits, bob_bases = measure_bits(alice_bits, alice_bases, eaves_bits, intercepted, num_bits)
@@ -15,6 +18,15 @@ def main():
     else:
         print("No significant eavesdropping detected. Key exchange successful.")
         print(f"Sifted Key: {sifted_alice_bits}")
+
+    # Simulate multiple runs and collect error rates
+    error_rates = []
+    for _ in range(10):
+        # Repeat the main simulation and collect error rates
+        error_rate = detect_eavesdropping(sifted_alice_bits, sifted_bob_bits)
+        error_rates.append(error_rate)
+
+    plot_error_rate(error_rates)
 
 
 def prepare_and_send_bits(num_bits):
@@ -78,3 +90,5 @@ main()
 
 # Error correction?
 # Simulation?
+# Inter Device Connection? With 
+# Messaging and Payment?
