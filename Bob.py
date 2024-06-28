@@ -1,3 +1,8 @@
+# Hello, This is BOB. 
+# For Demonstraion Porpose Im The Server Connecting Alice & Me(Bob) 
+# This Connection Taking Place Btwn Alice & Me(Bob) Simulates 
+# Interconnection Through Optical FIber And Like Wise
+
 import socket
 import numpy as np
 
@@ -24,10 +29,10 @@ def start_server():
     conn, addr = server_socket.accept()
     print('Connected by', addr)
 
-    num_bits = 128
-    eavesdropping_probability = 0.5
-    alice_bits = np.random.randint(0, 2, num_bits)
-    alice_bases = np.random.randint(0, 2, num_bits)
+    num_bits = 64
+    eavesdropping_probability = 0.7
+    alice_bits = np.random.randint(0, 2, num_bits, dtype=np.uint8)
+    alice_bases = np.random.randint(0, 2, num_bits, dtype=np.uint8)
     
     eaves_bits, eaves_bases, intercepted = eavesdrop_and_measure(alice_bits, alice_bases, num_bits, eavesdropping_probability)
     
@@ -38,6 +43,19 @@ def start_server():
     conn.sendall(alice_bits.tobytes())
     conn.sendall(alice_bases.tobytes())
     
+    while True:
+        message = conn.recv(1024).decode('utf-8')
+        if message.lower() == 'quit':
+            print("Alice has ended the connection.")
+            break
+        print("Alice: ", message)
+        
+        response = input("Enter a message to send to Alice (or type 'quit' to end): ")
+        if response.lower() == 'quit':
+            conn.sendall(response.encode('utf-8'))
+            break
+        conn.sendall(response.encode('utf-8'))
+
     # Close the connection
     conn.close()
     server_socket.close()
