@@ -31,7 +31,7 @@ This project demonstrates the implementation of a secure communication protocol 
 
 ## Prerequisites
 - Python 3.x
-- Required Python libraries: `numpy`, `pycryptodome`
+- Required Python libraries: `numpy`, `socket`
 
 ## Installation
 Install the required libraries using:
