@@ -1,5 +1,5 @@
 import customtkinter as ctk
-from tkinter import scrolledtext, messagebox
+from tkinter import messagebox
 import random
 import string
 import socket
@@ -48,35 +48,45 @@ def start_server():
         server_socket.bind((server_ip, server_port))
         server_socket.listen(1)
         threading.Thread(target=accept_clients, daemon=True).start()
+        connection_status.configure(text=f"Server started at {server_ip}:{server_port}", text_color=colors["text"])
+
         print("Server started, waiting for connections...")
     except Exception as e:
         print(f"Failed to start server: {e}")
+        connection_status.configure(text=f"Failed to start server: {e}", text_color="red")
         messagebox.showerror("Error", f"Failed to start server: {e}")
 
 # Function to accept client connections
 def accept_clients():
-    global client_socket
-    try:
-        conn, address = server_socket.accept() # type: ignore
-        client_socket = conn
-        print(f"Connected to {address}")
-        threading.Thread(target=receive_messages, daemon=True).start()
-    except Exception as e:
-        print(f"Error accepting clients: {e}")
-
-# Function to receive messages from the client
-def receive_messages():
-    global client_socket
+    global client_socket, connection_status
     while True:
         try:
-            if client_socket:
-                data = client_socket.recv(1024).decode()
-                if not data:
-                    break
-                display_message(f"Friend: {data}", sent=False)
+            conn, address = server_socket.accept()  # type: ignore 
+            client_socket = conn
+            connection_status.configure(text=f"Connected to {address}", text_color=colors["text"])
+            print(f"Connected to {address}")
+            threading.Thread(target=receive_messages, args=(conn,), daemon=True).start()
+        except Exception as e:
+            print(f"Error accepting clients: {e}")
+            break
+
+# Function to receive messages from the client
+def receive_messages(conn):
+    global client_socket, connection_status
+    while True:
+        try:
+            data = conn.recv(1024).decode()
+            if not data:
+                break
+            display_message(f"Friend: {data}", sent=False)
         except Exception as e:
             print(f"Error receiving message: {e}")
             break
+        
+    # Client has disconnected
+    connection_status.configure(text="Client disconnected", text_color="red")
+    client_socket.close()  # type: ignore
+    client_socket = None
 
 # Function to clear chat
 def clear_chat():
@@ -100,8 +110,11 @@ def show_help():
 
 # Function to exit the chat application
 def exit_chat():
+    if server_socket:
+        server_socket.close()
+    if client_socket:
+        client_socket.close()
     root.destroy()
-
 
 # Function to send messages from GUI
 def send_message():
@@ -154,7 +167,7 @@ root.configure(fg_color=colors["background"])
 header = ctk.CTkFrame(root, fg_color=colors["primary"], height=50)
 header.pack(side="top", fill="x", padx=10, pady=10)
 
-app_name = ctk.CTkLabel(header, text="QKD Messaging App", text_color=colors["text"], font=("Urbanist", 20, "bold"))
+app_name = ctk.CTkLabel(header, text="QKD Messaging App (Server)", text_color=colors["text"], font=("Urbanist", 20, "bold"))
 app_name.pack(side="left", padx=20, pady=15)
 
 help_button = ctk.CTkButton(header, text="Help", fg_color=colors["accent"], text_color=colors["background"], font=("Urbanist", 12, "bold"), command=show_help)
@@ -190,8 +203,9 @@ scrollable_chat.pack(fill="both", expand=True, padx=10, pady=10)
 input_area = ctk.CTkFrame(root, fg_color=colors["input_area"], corner_radius=10)
 input_area.pack(side="top", fill="x", padx=10, pady=10)
 
+# Connection status
 connection_status = ctk.CTkLabel(input_area, text="Waiting for connection...", text_color=colors["text"], font=("Urbanist", 14))
-connection_status.pack(side="top", padx=10, pady=5)
+connection_status.pack(side="bottom", padx=10, pady=10)
 
 input_field = ctk.CTkEntry(input_area, fg_color=colors["input_area"], text_color=colors["text"], font=("Urbanist", 16), corner_radius=10)
 input_field.pack(side="top", fill="x", padx=10, pady=10, expand=True)
