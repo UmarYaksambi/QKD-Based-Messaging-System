@@ -67,6 +67,10 @@ def receive_messages():
             print(f"Error receiving message: {e}")
             break
 
+    # Connection closed or error occurred
+    connection_status.configure(text="Server disconnected", text_color="red")
+    client_socket.close() # type: ignore
+
 # Function to clear chat
 def clear_chat():
     scrollable_chat.configure(state='normal')
@@ -89,6 +93,11 @@ def show_help():
 
 # Function to exit the chat application
 def exit_chat():
+    if client_socket:
+        try:
+            client_socket.close()
+        except Exception as e:
+            print(f"Error closing client socket: {e}")
     root.destroy()
 
 # Function to send messages from GUI
@@ -177,9 +186,6 @@ scrollable_chat.pack(fill="both", expand=True, padx=10, pady=10)
 # Input Area
 input_area = ctk.CTkFrame(root, fg_color=colors["input_area"], corner_radius=10)
 input_area.pack(side="top", fill="x", padx=10, pady=10)
-
-input_area_label = ctk.CTkLabel(input_area, text="Send a message here!", text_color=colors["text"], font=("Urbanist", 14))
-input_area_label.pack(side="top", padx=10, pady=5)
 
 # Connection status
 connection_status = ctk.CTkLabel(input_area, text="Waiting for connection...", text_color=colors["text"], font=("Urbanist", 14))
