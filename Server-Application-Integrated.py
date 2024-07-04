@@ -26,7 +26,7 @@ def simulate_error_rate():
     return random.uniform(0, 0.1)
 
 def detect_eavesdropping(error_rate):
-    return error_rate > 0.05
+    return error_rate > 0.8
 
 def encrypt_message(message, key):
     return ''.join(chr(ord(c) ^ ord(k)) for c, k in zip(message, key))
@@ -65,27 +65,28 @@ def accept_clients():
             client_socket = conn
             connection_status.configure(text=f"Connected to {address}", text_color=colors["text"])
             print(f"Connected to {address}")
-            threading.Thread(target=receive_messages, args=(conn,), daemon=True).start()
+            threading.Thread(target=receive_messages).start()
         except Exception as e:
             print(f"Error accepting clients: {e}")
             break
 
 # Function to receive messages from the client
-def receive_messages(conn):
+def receive_messages():
     global client_socket, connection_status
     while True:
         try:
-            data = conn.recv(1024).decode()
-            if not data:
-                break
-            display_message(f"Friend: {data}", sent=False)
+            if client_socket:
+                data = client_socket.recv(1024).decode()
+                if not data:
+                    break
+                display_message(f"Friend: {data}", sent=False) ###
         except Exception as e:
-            print(f"Error receiving message: {e}")
+            print(f"Error receiving message: {str(e)}")
             break
         
     # Client has disconnected
     connection_status.configure(text="Client disconnected", text_color="red")
-    client_socket.close()  # type: ignore
+    client_socket.close()   # type: ignore
     client_socket = None
 
 # Function to clear chat
@@ -203,8 +204,11 @@ scrollable_chat.pack(fill="both", expand=True, padx=10, pady=10)
 input_area = ctk.CTkFrame(root, fg_color=colors["input_area"], corner_radius=10)
 input_area.pack(side="top", fill="x", padx=10, pady=10)
 
+connection_area = ctk.CTkFrame(input_area, fg_color=colors["input_area"])
+connection_area.pack(anchor="w", padx=5)
+
 # Connection status
-connection_status = ctk.CTkLabel(input_area, text="Waiting for connection...", text_color=colors["text"], font=("Urbanist", 14))
+connection_status = ctk.CTkLabel(connection_area, text="Waiting for connection...", text_color=colors["text"], font=("Urbanist", 14), anchor= "w")
 connection_status.pack(side="bottom", padx=10, pady=10)
 
 input_field = ctk.CTkEntry(input_area, fg_color=colors["input_area"], text_color=colors["text"], font=("Urbanist", 16), corner_radius=10)
