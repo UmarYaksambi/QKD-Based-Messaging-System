@@ -1,9 +1,8 @@
 import customtkinter as ctk
 from tkinter import messagebox
-import random
-import string
 import socket
 import threading
+import numpy as np
 
 # Define the colors
 colors = {
@@ -18,29 +17,74 @@ colors = {
     "button": "#F06292",  # Pink
 }
 
-# QKD simulation functions
-def generate_key(length):
-    return ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(length))
-
-def simulate_error_rate():
-    return random.uniform(0, 0.1)
-
-def detect_eavesdropping(error_rate):
-    return error_rate > 0.8
-
-def encrypt_message(message, key):
-    return ''.join(chr(ord(c) ^ ord(k)) for c, k in zip(message, key))
-
-def decrypt_message(encrypted, key):
-    return ''.join(chr(ord(c) ^ ord(k)) for c, k in zip(encrypted, key))
-
 # Global variables
-server_ip = '127.0.0.1'  # Replace with server IP if different
+eavesdropper = False
+server_ip = '127.0.0.1'  # Hotspot IP 192.168.107.13
 server_port = 12345
 server_socket = None
 client_socket = None
+num_bits = 64
+eavesdropping_probability = 0.1
+alice_bits = np.random.randint(0, 2, num_bits, dtype=np.uint8)
+alice_bases = np.random.randint(0, 2, num_bits, dtype=np.uint8)
+bob_bases = np.zeros(num_bits, dtype=int)
+KEY = np.zeros(num_bits, dtype=int)
+error_rate = 0
+error_limit = 10
 
-# Function to start the server
+# Eavesdrop check
+def eavesdrop_and_measure(alice_bits, alice_bases, num_bits, eavesdropping_probability):
+    global error_rate  # Ensure error_rate is updated globally
+    eaves_bits = np.zeros(num_bits, dtype=int)
+    eaves_bases = np.random.randint(0, 2, num_bits)
+    intercepted = (np.random.rand(num_bits) < eavesdropping_probability)
+    
+    error_count = 0
+    
+    for i in range(num_bits):
+        if intercepted[i]:
+            if eaves_bases[i] == alice_bases[i]:
+                eaves_bits[i] = alice_bits[i]
+            else:
+                eaves_bits[i] = np.random.randint(0, 2)
+                error_count += 1  # Increment error count for mismatched bases
+
+    error_rate = float(error_count) / num_bits  # Calculate error rate
+    if not eavesdropper:
+        error_rate = np.round(np.random.uniform(3, 10), 2)
+    else:
+        error_rate = np.round(np.random.uniform(8, 20), 2)
+    
+    return eaves_bits, eaves_bits, error_rate
+
+def generate_key(alice_bases, bob_bases):
+    global KEY  # Ensure KEY is updated globally
+    for i in range(num_bits):
+        if alice_bases[i] == bob_bases[i]:
+            KEY[i] = alice_bits[i]
+    # Update GUI key label
+    key_label.configure(text=f"Key: {''.join(map(str, KEY))}")
+
+def encrypt_message(message, key):
+    key = bytearray(key)  # Convert key to mutable bytearray
+    encrypted = bytearray(message.encode())
+    
+    # Perform XOR encryption
+    for i in range(len(encrypted)):
+        encrypted[i] ^= key[i % len(key)]
+    
+    return encrypted
+
+def decrypt_message(ciphertext, key):
+    key = bytearray(key)  # Convert key to mutable bytearray
+    decrypted = bytearray(ciphertext)
+    
+    # Perform XOR decryption
+    for i in range(len(decrypted)):
+        decrypted[i] ^= key[i % len(key)]
+    
+    return decrypted.decode()
+
 def start_server():
     global server_socket
     try:
@@ -50,44 +94,107 @@ def start_server():
         threading.Thread(target=accept_clients, daemon=True).start()
         connection_status.configure(text=f"Server started at {server_ip}:{server_port}", text_color=colors["text"])
 
-        print("Server started, waiting for connections...")
     except Exception as e:
-        print(f"Failed to start server: {e}")
         connection_status.configure(text=f"Failed to start server: {e}", text_color="red")
         messagebox.showerror("Error", f"Failed to start server: {e}")
 
-# Function to accept client connections
 def accept_clients():
     global client_socket, connection_status
     while True:
         try:
-            conn, address = server_socket.accept()  # type: ignore 
-            client_socket = conn
-            connection_status.configure(text=f"Connected to {address}", text_color=colors["text"])
-            print(f"Connected to {address}")
-            threading.Thread(target=receive_messages).start()
+            if server_socket:
+                conn, address = server_socket.accept()
+                client_socket = conn
+                connection_status.configure(text=f"Connected to {address}", text_color=colors["text"])
+                
+                eaves_bits, eaves_bits, error_rate = eavesdrop_and_measure(alice_bits, alice_bases, num_bits, eavesdropping_probability)
+
+                # Send the number of bits first
+                conn.sendall(num_bits.to_bytes(4, byteorder='big'))
+
+                # Send Alice's bits and bases to the client (Bob)
+                conn.sendall(alice_bases.tobytes())
+
+                # Send eavesdropper's bits, bases, and intercepted data
+                conn.sendall(eaves_bits.tobytes())
+
+                threading.Thread(target=receive_messages, args=(conn,), daemon=True).start()
+
         except Exception as e:
-            print(f"Error accepting clients: {e}")
+            if server_socket:
+                server_socket.close()
+            connection_status.configure(text=f"Error accepting clients: {e}", text_color="red")
             break
 
 # Function to receive messages from the client
-def receive_messages():
-    global client_socket, connection_status
+def receive_messages(conn):
+    global client_socket, connection_status, bob_bases
+    first_message_received = False
+
     while True:
         try:
-            if client_socket:
-                data = client_socket.recv(1024).decode()
-                if not data:
-                    break
-                display_message(f"Friend: {data}", sent=False) ###
+            data = conn.recv(1024)
+            if not data:
+                break
+            
+            if not first_message_received:
+                bob_bases = np.frombuffer(data, dtype=np.uint8)
+                first_message_received = True
+
+                generate_key(alice_bases, bob_bases)
+            else:
+                decrypted_message = decrypt_message(data, KEY)  # Decrypt the received data
+                display_message(f"Bob: {decrypted_message}", sent=False)  # Display the decrypted message
+        
         except Exception as e:
-            print(f"Error receiving message: {str(e)}")
+            connection_status.configure(text=f"Error receiving message: {e}", text_color="red")
             break
         
     # Client has disconnected
     connection_status.configure(text="Client disconnected", text_color="red")
-    client_socket.close()   # type: ignore
+    messagebox.showinfo("Disconnected", "Server disconnected.")
+    if conn:
+        conn.close()
     client_socket = None
+
+# Function to send messages from GUI
+def send_message():
+    global error_rate
+    message = input_field.get()
+    if message:
+        eavesdropping_detected = (error_rate > error_limit)
+        connection_secure = not eavesdropping_detected
+        encrypted_message = encrypt_message(message, KEY)
+
+        # Convert encrypted message to a displayable string format (hex)
+        encrypted_message_display = encrypted_message.hex()
+
+        key_label.configure(text=f"Key: {''.join(map(str, KEY))}")
+        error_rate_label.configure(text=f"Error Rate: {error_rate:.2f}%")
+        eavesdropping_label.configure(text=f"Eavesdropping Detected: {'Yes' if eavesdropping_detected else 'No'}")
+        connection_label.configure(text=f"Connection Secure: {'Yes' if connection_secure else 'No'}")
+        encrypt_message_label.configure(text=f"Encrypted Message: {encrypted_message_display}")
+
+        display_message(f"You: {message}", sent=True)
+        
+        if eavesdropping_detected:
+            display_message("Error: Eavesdropping detected, message cannot be sent.", sent=False)
+        else:
+            if client_socket:
+                try:
+                    client_socket.send(encrypted_message)
+                    input_field.delete(0, 'end')
+                except Exception as e:
+                    display_message(f"Error sending message: {e}", sent=True)
+            else:
+                display_message("Error: Not connected to client", sent=True)
+
+# Function to display messages in the GUI
+def display_message(message, sent):
+    scrollable_chat.configure(state='normal')
+    scrollable_chat.insert(ctk.END, f"{message}\n", ('sent' if sent else 'received'))
+    scrollable_chat.configure(state='disabled')
+    scrollable_chat.yview(ctk.END)
 
 # Function to clear chat
 def clear_chat():
@@ -111,56 +218,16 @@ def show_help():
 
 # Function to exit the chat application
 def exit_chat():
+    global server_socket, client_socket
     if server_socket:
         server_socket.close()
     if client_socket:
         client_socket.close()
     root.destroy()
 
-# Function to send messages from GUI
-def send_message():
-    message = input_field.get()
-    if message:
-        key = generate_key(len(message))
-        error_rate = simulate_error_rate()
-        eavesdropping_detected = detect_eavesdropping(error_rate)
-        connection_secure = not eavesdropping_detected
-        encrypted_message = encrypt_message(message, key)
-
-        key_label.configure(text=f"Key: {key}")
-        error_rate_label.configure(text=f"Error Rate: {error_rate:.2%}")
-        eavesdropping_label.configure(text=f"Eavesdropping Detected: {'Yes' if eavesdropping_detected else 'No'}")
-        connection_label.configure(text=f"Connection Secure: {'Yes' if connection_secure else 'No'}")
-        encrypt_message_label.configure(text=f"Encrypted Message: {encrypted_message}")
-
-        display_message(f"You: {message}", sent=True)
-        
-        if eavesdropping_detected:
-            display_message("Error: Eavesdropping detected, message cannot be decrypted.", sent=False)
-        else:
-            decrypted_message = decrypt_message(encrypted_message, key)
-            display_message(f"Decrypted: {decrypted_message}", sent=False)
-
-        if client_socket:
-            try:
-                client_socket.send(encrypted_message.encode())
-            except Exception as e:
-                display_message(f"Error sending message: {e}", sent=True)
-        else:
-            display_message("Error: Not connected to client", sent=True)
-
-    input_field.delete(0, 'end')
-
-# Function to display messages in the GUI
-def display_message(message, sent):
-    scrollable_chat.configure(state='normal')
-    scrollable_chat.insert(ctk.END, f"{message}\n", ('sent' if sent else 'received'))
-    scrollable_chat.configure(state='disabled')
-    scrollable_chat.yview(ctk.END)
-
 # GUI setup
 root = ctk.CTk()
-root.title("QKD Secured Messaging App")
+root.title("QKD Secured Messaging App - Server")
 root.geometry("800x800")
 root.configure(fg_color=colors["background"])
 
