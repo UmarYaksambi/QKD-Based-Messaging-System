@@ -1,4 +1,4 @@
-# QKD-Based Inter-Device Payment and Messaging
+# QKD-Based Inter-Device Messaging
 
 This project demonstrates the implementation of a secure communication protocol using Quantum Key Distribution (QKD) for inter-device payment and messaging applications. The simulation involves two systems, Alice (sender) and Bob (receiver), that use QKD to securely generate a shared secret key over a network. This key is then used to encrypt and decrypt messages, ensuring confidentiality and integrity.
 
