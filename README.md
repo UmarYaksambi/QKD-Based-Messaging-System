@@ -55,7 +55,7 @@ $ cd QKD-Based-Messaging-System
 ### Step 2: Install dependencies:
 
 ```bash
-pip install numpy socket customtkinter
+$ pip install numpy socket customtkinter
 ```
 
 ### Step 3: Run the application:
