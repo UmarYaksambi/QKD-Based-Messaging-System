@@ -26,7 +26,7 @@ This project demonstrates the implementation of a secure communication protocol 
 ## Features
 - **Quantum Key Distribution (QKD):** Implements the BB84 protocol for secure key exchange.
 - **Error Correction and Privacy Amplification:** Ensures a high level of security by correcting errors and reducing information an eavesdropper could gain.
-- **AES Encryption:** Uses the generated quantum key for AES-128 encryption and decryption of messages and payment details.
+- **XOR Encryption:** Uses a simple XOR encryption and decryption.
 - **Network Communication:** Facilitates secure communication between two devices over a network.
 
 ## Prerequisites
