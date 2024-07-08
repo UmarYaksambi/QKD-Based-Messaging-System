@@ -5,11 +5,11 @@ This project demonstrates the implementation of a secure communication protocol 
 ## Table of Contents
 - [Features](#features)
 - [Prerequisites](#prerequisites)
-- [Installation](#installation)
 - [Files](#files)
-- [How to Run](#how-to-run)
-  - [Step 1: Start Bob's Script](#step-1-start-bobs-script)
-  - [Step 2: Start Alice's Script](#step-2-start-alices-script)
+- [Installation](#installation)
+  - [Step 1: Clone the repository](#step-1-clone-the-repository)
+  - [Step 2: Install dependencies](#step-2-install-dependencies)
+  - [Step 3: Run the application](#step-3-run-the-application)
   - [Configuration](#configuration)
 - [Project Structure](#project-structure)
   - [QKD Functions](#qkd-functions)
@@ -19,6 +19,8 @@ This project demonstrates the implementation of a secure communication protocol 
   - [Alice's Output](#alices-output)
   - [Bob's Output](#bobs-output)
 - [Future Enhancements](#future-enhancements)
+- [Important Notes](#important-notes)
+- [Further Exploration](#further-exploration)
 - [Contributing](#contributing)
 - [License](#license)
 - [Acknowledgements](#acknowledgements)
@@ -33,12 +35,6 @@ This project demonstrates the implementation of a secure communication protocol 
 ## Prerequisites
 - Python 3.x
 - Required Python libraries: `numpy`, `socket`, `customtkinter`
-
-## Installation
-Install the required libraries using:
-```bash
-pip install numpy socket customtkinter
-```
 
 ## Files
 - `QKD.py`: Contains the QKD protocol functions.
@@ -64,7 +60,7 @@ pip install numpy socket customtkinter
 
 ### Step 3: Run the application:
 - Start the terminal-based messaging:
-Alice acts as the sender. Bob acts as the receiver. 
+`Alice acts as the sender.`` Bob acts as the receiver. `
 ```bash
 $ python Alice.py
 $ python Bob.py
@@ -158,6 +154,6 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 ## Acknowledgements
 - [BB84 Protocol](https://en.wikipedia.org/wiki/BB84)
 - [Python Sockets](https://docs.python.org/3/library/socket.html)
-- [How Quantum Key Distribution Works (BB84 & E91)]([https://www.pycryptodome.org/](https://youtu.be/V3WzH2up7Os?si=6b-gD5h0mJ-jZQnb))
+- [How Quantum Key Distribution Works (BB84 & E91)](https://youtu.be/V3WzH2up7Os?si=6b-gD5h0mJ-jZQnb)
 
 ---
