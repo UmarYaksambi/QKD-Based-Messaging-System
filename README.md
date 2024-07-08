@@ -63,10 +63,8 @@ pip install numpy socket customtkinter
 ```
 
 ### Step 3: Run the application:
-Run the following command on Bob's system (replace `127.0.0.1` with common networks IP address for inter device communication if needed):
-
--Start the terminal-based messaging:
--Bob acts as the receiver. - Alice acts as the sender. Run the following command on Alice's system:
+- Start the terminal-based messaging:
+Alice acts as the sender. Bob acts as the receiver. 
 ```bash
 $ python Alice.py
 $ python Bob.py
@@ -105,74 +103,6 @@ The `alice.py` script performs the following steps:
 6. Encrypts a message or payment details using the generated key.
 7. Sends the encrypted message or payment details to Bob.
 
-```python
-import socket
-import numpy as np
-import random
-from Crypto.Cipher import AES
-from Crypto.Util.Padding import pad, unpad
-
-# QKD Functions
-from qkd import *
-
-def alice_send_qkd(host, port):
-    num_bits = 1000
-    alice_bits, alice_bases = prepare_and_send_bits(num_bits)
-
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.connect((host, port))
-        
-        # Send the bases and bits to Bob
-        s.sendall(alice_bases.tobytes())
-        s.sendall(alice_bits.tobytes())
-        print("Alice sent bases and bits to Bob.")
-
-        # Receive Bob's bases and bits
-        bob_bases = np.frombuffer(s.recv(num_bits), dtype=np.int8)
-        bob_bits = np.frombuffer(s.recv(num_bits), dtype=np.int8)
-        print("Alice received bases and bits from Bob.")
-        
-        # Perform sifting
-        sifted_alice_bits, sifted_bob_bits = sift_bits(alice_bases, bob_bases, alice_bits, bob_bits)
-        
-        # Detect eavesdropping
-        error_rate = detect_eavesdropping(sifted_alice_bits, sifted_bob_bits)
-        print(f"Error Rate: {error_rate:.2%}")
-        
-        if error_rate > 0.1:
-            print("Eavesdropping detected. Terminating the process.")
-            return
-        else:
-            print("No significant eavesdropping detected. Key exchange successful.")
-        
-        # Error correction and privacy amplification
-        corrected_bob_bits = error_correction(sifted_alice_bits, sifted_bob_bits)
-        final_alice_key, final_bob_key = privacy_amplification(sifted_alice_bits, corrected_bob_bits)
-        
-        # Convert the key to a 16-byte AES key
-        key_length = min(len(final_alice_key), 16)  # AES-128 requires a 16-byte key
-        aes_key = bytes(final_alice_key[:key_length])
-        
-        # Simulate messaging
-        message = "Hello, Bob! This is Alice."
-        print(f"Alice's original message: {message}")
-        
-        encrypted_message = encrypt_message(aes_key, message)
-        print(f"Encrypted message: {encrypted_message.hex()}")
-        
-        # Send the encrypted message to Bob
-        s.sendall(encrypted_message)
-        print("Alice sent the encrypted message to Bob.")
-
-def main():
-    host = '127.0.0.1'  # Bob's IP address
-    port = 65432        # Port to connect to Bob
-    alice_send_qkd(host, port)
-
-if __name__ == "__main__":
-    main()
-```
-
 ### Bob's Script
 
 The `bob.py` script performs the following steps:
@@ -182,69 +112,6 @@ The `bob.py` script performs the following steps:
 4. Sends its bases and measured bits back to Alice.
 5. Receives the encrypted message or payment details from Alice.
 6. Decrypts the received message or payment details using the generated key.
-
-```python
-import socket
-import numpy as np
-from Crypto.Cipher import AES
-from Crypto.Util.Padding import pad, unpad
-
-# QKD Functions
-from qkd import *
-
-def bob_receive_qkd(host, port):
-    num_bits = 1000
-    
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind((host, port))
-        s.listen()
-        print("Bob is listening for Alice...")
-        
-        conn, addr = s.accept()
-        with conn:
-            print(f"Connected by {addr}")
-            
-            # Receive the bases and bits from Alice
-            alice_bases = np.frombuffer(conn.recv(num_bits), dtype=np.int8)
-            alice_bits = np.frombuffer(conn.recv(num_bits), dtype=np.int8)
-            
-            # Bob generates his own bases and measures Alice's bits
-            bob_bases = np.random.randint(2, size=num_bits)
-            bob_bits = measure_bits(alice_bits, alice_bases, [], [], [], num_bits)[0]
-            
-            # Send Bob's bases and bits back to Alice
-            conn.sendall(bob_bases.tobytes())
-            conn.sendall(bob_bits.tobytes())
-            print("Bob sent his bases and measured bits back to Alice.")
-            
-            # Receive the encrypted message from Alice
-            encrypted_message = conn.recv(1024)
-            print(f"Encrypted message received: {encrypted_message.hex()}")
-            
-            # Assuming Alice and Bob perform the same error correction and privacy amplification
-            # These steps should be the same as in Alice's script
-            sifted_alice_bits, sifted_bob_bits = sift_bits(alice_bases, bob_bases, alice_bits, bob_bits)
-            corrected_bob_bits = error_correction(sifted_alice_bits, sifted_bob_bits)
-            final_alice_key, final_bob_key = privacy_amplification(sifted_alice_bits, corrected_bob_bits)
-
-
-            
-            # Convert the key to a 16-byte AES key
-            key_length = min(len(final_bob_key), 16)  # AES-128 requires a 16-byte key
-            aes_key = bytes(final_bob_key[:key_length])
-            
-            # Decrypt the message
-            decrypted_message = decrypt_message(aes_key, encrypted_message)
-            print(f"Bob's decrypted message: {decrypted_message}")
-
-def main():
-    host = '127.0.0.1'  # Bob's IP address
-    port = 65432        # Port to listen on
-    bob_receive_qkd(host, port)
-
-if __name__ == "__main__":
-    main()
-```
 
 ## Example Output
 
@@ -270,9 +137,17 @@ Bob's decrypted message: Hello, Bob! This is Alice.
 
 ## Future Enhancements
 - **Support Additional QKD Protocols:** Implement other QKD protocols such as E91.
-- **Graphical User Interface (GUI):** Develop a GUI to visualize the key distribution process, error rates, and encrypted messages.
 - **Performance Metrics:** Measure and display metrics such as key generation rate and encryption/decryption time.
 - **Integration with Real-world Applications:** Extend the simulation to integrate with real-world payment and messaging systems.
+
+## Important Notes:
+- This is a work in progress! The core functionalities demonstrate the concepts of QKD-based messaging. There may be limitations and potential bugs. We recommend using it for educational purposes only.
+-Security in real-world scenarios can be much more complex. This is a simplified simulation for educational purposes.
+
+## Further Exploration:
+- Feel free to explore the code and play around with the different functionalities.
+- You can find the server-side code and potentially other scripts (like QKD simulation) in this repository for a more comprehensive understanding of the entire application.
+- We hope this client-side application provides a glimpse into the world of secure communication using QKD. Remember, secure messaging is always a good thing!
 
 ## Contributing
 Contributions are welcome! Please fork the repository and submit pull requests for any enhancements or bug fixes.
@@ -283,6 +158,6 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 ## Acknowledgements
 - [BB84 Protocol](https://en.wikipedia.org/wiki/BB84)
 - [Python Sockets](https://docs.python.org/3/library/socket.html)
-- [PyCryptodome](https://www.pycryptodome.org/)
+- [How Quantum Key Distribution Works (BB84 & E91)]([https://www.pycryptodome.org/](https://youtu.be/V3WzH2up7Os?si=6b-gD5h0mJ-jZQnb))
 
 ---
