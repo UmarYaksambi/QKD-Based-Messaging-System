@@ -28,35 +28,54 @@ This project demonstrates the implementation of a secure communication protocol 
 - **Error Correction and Privacy Amplification:** Ensures a high level of security by correcting errors and reducing information an eavesdropper could gain.
 - **XOR Encryption:** Uses a simple XOR encryption and decryption.
 - **Network Communication:** Facilitates secure communication between two devices over a network.
+- **GUI Application:** Includes threaded messaging, graphical message display, and secure data transmission using QKD.
 
 ## Prerequisites
 - Python 3.x
-- Required Python libraries: `numpy`, `socket`
+- Required Python libraries: `numpy`, `socket`, `customtkinter`
 
 ## Installation
 Install the required libraries using:
 ```bash
-pip install numpy pycryptodome
+pip install numpy socket customtkinter
 ```
 
 ## Files
-- `alice.py`: Script to run Alice's side of the QKD and communication.
-- `bob.py`: Script to run Bob's side of the QKD and communication.
-- `qkd.py`: Contains the QKD protocol functions.
+- `QKD.py`: Contains the QKD protocol functions.
+- `Alice.py`: Script to run terminal Alice's side of the QKD and communication.
+- `Bob.py`: Script to run terminal Bob's side of the QKD and communication.
+- `Server-Application-Integrated.py`: Script to run GUI based server side of QKD and communication.
+- `Client-Application-Integrated.py`: Script to run GUI based client side of QKD and communication.
 - `README.md`: Project documentation.
 
-## How to Run
+## Installation
 
-### Step 1: Start Bob's Script
-Bob acts as the receiver. Run the following command on Bob's system (replace `127.0.0.1` with Bob's IP address if needed):
+### Step 1: Clone the repository:
 ```bash
-python bob.py
+$ git clone https://github.com/umaryaksambi/QKD-Based-Messaging-System.git
+$ cd QKD-Based-Messaging-System
 ```
 
-### Step 2: Start Alice's Script
-Alice acts as the sender. Run the following command on Alice's system:
+### Step 2: Install dependencies:
+
 ```bash
-python alice.py
+pip install numpy socket customtkinter
+```
+
+### Step 3: Run the application:
+Run the following command on Bob's system (replace `127.0.0.1` with common networks IP address for inter device communication if needed):
+
+-Start the terminal-based messaging:
+-Bob acts as the receiver. - Alice acts as the sender. Run the following command on Alice's system:
+```bash
+$ python Alice.py
+$ python Bob.py
+```
+
+- Launch the GUI application:
+```bash
+$ python Server-Application-Integrated.py
+$ python Client-Application-Integrated.py
 ```
 
 ### Configuration
