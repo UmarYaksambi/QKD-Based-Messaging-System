@@ -111,6 +111,10 @@ The `bob.py` script performs the following steps:
 
 ## Example Output
 
+![App Screenshot](https://media.licdn.com/dms/image/D5622AQHa8K2pqgI-_w/feedshare-shrink_1280/0/1720172098213?e=1724284800&v=beta&t=bu7_gpf-OLo8wJxPOMAujoJyupauuk-97eVw8MFI970)
+
+![Error Overtime Screenshot](https://media.licdn.com/dms/image/D5622AQFS0eBdRZ4R0w/feedshare-shrink_1280/0/1720172098211?e=1724284800&v=beta&t=gyRirCtNrFqktcvpQLRLsUM-CTCSJYrT30ju1nHLg_Y)
+
 ### Alice's Output
 ```
 Alice sent bases and bits to Bob.
